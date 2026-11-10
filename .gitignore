@@ -1,0 +1,5 @@
+build*/
+.cache/
+core
+*.core
+.superpowers/
