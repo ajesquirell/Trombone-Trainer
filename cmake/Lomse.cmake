@@ -4,7 +4,8 @@ include(FetchContent)
 FetchContent_Declare(lomse
   GIT_REPOSITORY https://github.com/lenmus/lomse.git
   GIT_TAG 9f774d7a3a3904c89b7ebcc8fbada085a9f3d687
-  GIT_PROGRESS TRUE)
+  GIT_PROGRESS TRUE
+  SOURCE_SUBDIR _trainer_source_only)
 
 set(LOMSE_BUILD_STATIC_LIB ON CACHE BOOL "" FORCE)
 set(LOMSE_BUILD_SHARED_LIB OFF CACHE BOOL "" FORCE)
@@ -18,10 +19,8 @@ set(LOMSE_ENABLE_COMPRESSION OFF CACHE BOOL "" FORCE)
 set(LOMSE_DOWNLOAD_BRAVURA_FONT OFF CACHE BOOL "" FORCE)
 set(LOMSE_INSTALL_BRAVURA_FONT OFF CACHE BOOL "" FORCE)
 set(LOMSE_USING_EMSCRIPTEN "${EMSCRIPTEN}" CACHE BOOL "" FORCE)
-FetchContent_GetProperties(lomse)
-if(NOT lomse_POPULATED)
-  FetchContent_Populate(lomse)
-endif()
+# Populate only; the patched build-local copy is configured below.
+FetchContent_MakeAvailable(lomse)
 
 # This release assumes it is the top-level CMake project in its build-version
 # command. Work on a build-local copy so local source overrides stay untouched.

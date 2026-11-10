@@ -22,7 +22,7 @@ dependency fetch. Ninja is optional. Both dependencies are fetched at fixed comm
 
 | Dependency | Revision |
 | --- | --- |
-| [PGE3](https://github.com/OneLoneCoder/olcPixelGameEngine3) | `ee9210acf196c22a9919105a57457f19dc3d4b5e` |
+| [PGE3](https://github.com/OneLoneCoder/olcPixelGameEngine3) | `ea99cd5a8abeb3972cc04235aa3b866713dc9fa8` |
 | [Lomse 0.30.0](https://github.com/lenmus/lomse/releases/tag/0.30.0) | `9f774d7a3a3904c89b7ebcc8fbada085a9f3d687` |
 
 On Debian/Ubuntu, install `build-essential cmake git libfreetype6-dev libpng-dev
@@ -80,9 +80,8 @@ The custom shell supplies only the canvas, loading status, and gesture handling.
 All game controls and logic are C++. Canvas pointer capture retains drags outside
 its bounds, touch gestures do not scroll the page, and the canvas receives focus.
 
-Two small PGE3 workarounds are generated in a private build header without
-modifying the dependency checkout: return unsupported for relative mouse mode on
-hosts that omit the override, and resize the web canvas to its entire parent.
+A small PGE3 viewport fix is generated in a private build header without
+modifying the dependency checkout: resize the web canvas to its entire parent.
 The app then resizes its logical screen and recomputes all geometry. Lomse's
 embedded build-version paths are corrected automatically in a build-local copy;
 its bitmap fit is calculated explicitly to avoid the release's width-for-height
@@ -206,6 +205,11 @@ For offline source checkouts at the pinned revisions, supply
 `-DFETCHCONTENT_SOURCE_DIR_PGE3_SOURCE=/path/to/olcPixelGameEngine3` and
 `-DFETCHCONTENT_SOURCE_DIR_LOMSE=/path/to/lomse`. The latter must include `fonts/`.
 An offline web build also needs the FreeType/PNG/zlib Emscripten ports cached.
+Use checkouts matching the pinned revisions, not a fork's unpushed HEAD. To return
+an existing build to managed PGE3 downloads, configure with
+`-DFETCHCONTENT_SOURCE_DIR_PGE3_SOURCE=`. Both dependencies use
+`FetchContent_MakeAvailable` in download-only mode; library setup stays under
+this project's control.
 
 Optional browser automation uses Playwright installed separately:
 

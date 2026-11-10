@@ -1,25 +1,13 @@
 include(FetchContent)
 FetchContent_Declare(pge3_source
   GIT_REPOSITORY https://github.com/OneLoneCoder/olcPixelGameEngine3.git
-  GIT_TAG ee9210acf196c22a9919105a57457f19dc3d4b5e)
-FetchContent_GetProperties(pge3_source)
-if(NOT pge3_source_POPULATED)
-  FetchContent_Populate(pge3_source)
-endif()
+  GIT_TAG ea99cd5a8abeb3972cc04235aa3b866713dc9fa8
+  SOURCE_SUBDIR _trainer_source_only)
+FetchContent_MakeAvailable(pge3_source)
 add_library(pge3 INTERFACE)
 target_compile_features(pge3 INTERFACE cxx_std_20)
-# This pinned PGE3 revision only implements relative mouse mode on X11.
-# Give other hosts the unsupported result rather than leaving them abstract.
 # Generate a private copy; the dependency checkout is never modified.
 file(READ "${pge3_source_SOURCE_DIR}/olcPixelGameEngine3.h" pge_header)
-set(pge_missing "virtual bool SetRelativeMouseMode(olc::Window* pWindow, bool bEnabled) = 0;")
-string(FIND "${pge_header}" "${pge_missing}" pge_match)
-if(pge_match EQUAL -1)
-  message(FATAL_ERROR "PGE3 relative-mouse compatibility patch no longer matches; check dependency revision")
-endif()
-string(REPLACE "${pge_missing}"
-  "virtual bool SetRelativeMouseMode(olc::Window*, bool) { return false; }"
-  pge_header "${pge_header}")
 # Fit the entire browser viewport instead of retaining the initial canvas aspect.
 # The application recalculates its logical screen geometry after every resize.
 set(pge_resize "double height = parentWidth / aspect;")

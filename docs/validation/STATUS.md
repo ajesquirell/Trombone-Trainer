@@ -1,5 +1,36 @@
 # Validation record
 
+## Update: public PGE3 pin and modern FetchContent
+
+GitHub Actions exposed an incorrect repository/commit pairing: the old PGE3
+commit `ee9210acf196c22a9919105a57457f19dc3d4b5e` came from the local fork, not
+the declared OneLoneCoder upstream. Earlier local source overrides hid the
+download failure. The pin is now the public upstream commit
+`ea99cd5a8abeb3972cc04235aa3b866713dc9fa8`, independently verified through the
+official commit and PR #324, which records its merge into upstream main.
+
+The upstream header has all required trainer APIs and does not contain the
+fork's relative-mouse API; its obsolete workaround was removed. Both dependency
+declarations now use `FetchContent_MakeAvailable` with a source-only subdirectory,
+avoiding the deprecated one-argument `FetchContent_Populate` call without adding
+the upstream build systems prematurely.
+
+Validation performed:
+
+- Native and full Emscripten builds against the exact upstream header: **PASS**.
+- Native CTest: **2/2 PASS** (core and font preservation).
+- Clean clone-based FetchContent configuration with no PGE3 source override,
+  followed by native PGE3 bootstrap build and CTest: **PASS**. The checkout HEAD
+  matches the new pin and the invalid fork commit is absent.
+- For the clone check, an upstream-only local mirror was constructed from the
+  cached official revision and its ancestors. A command-scoped Git URL rewrite
+  supplied this mirror because live shell GitHub downloads still fail DNS here.
+  This tests the project's real clone/checkout logic, but is **not** a successful
+  live network download. No global Git configuration was changed.
+
+The next GitHub Actions run remains the live network/CI check. Push the changed
+files to `main` to create a new run using the corrected pin.
+
 ## Update: GitHub Pages preparation
 
 Added a pinned GitHub Actions workflow to run core tests, build with Emscripten
