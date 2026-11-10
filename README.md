@@ -1,3 +1,5 @@
+# *Warning - This is AI slop*
+
 # Trombone Slide Position Trainer
 
 A small C++20 trainer using **olcPixelGameEngine3** for every control and drawing,
