@@ -136,18 +136,27 @@ void Game::drawSettings() {
     const float column = twoColumns ? (w - 2 * gap) / 2 : w;
     const float rightX = twoColumns ? x + column + 2 * gap : x;
     float top = height_ < 540 ? 62.0f : 100 * scale_;
+    auto heading = [&](std::string_view label, float y, float size, float width, olc::Pixel color) {
+        const float fit = std::min(size, width / draw.GetTextSize(label, true).x);
+        draw.StringProp({x, y}, label, color, {fit, fit});
+    };
     if (tabs) {
+        heading("Trombone Trainer", 4, 2.0f, w, gold);
+        heading("Powered by olcPixelGameEngine3", 25, 1.25f, w, muted);
         const float tabWidth = (w - 2 * gap) / 3;
-        if (button("Quiz", {{x, 12}, {tabWidth, 44}}, !rangeTab_)) rangeTab_ = false;
-        if (button("Range", {{x + tabWidth + gap, 12}, {tabWidth, 44}}, rangeTab_)) rangeTab_ = true;
-        if (button("Notes", {{x + 2 * (tabWidth + gap), 12}, {tabWidth, 44}})) {
+        if (button("Quiz", {{x, 42}, {tabWidth, 44}}, !rangeTab_)) rangeTab_ = false;
+        if (button("Range", {{x + tabWidth + gap, 42}, {tabWidth, 44}}, rangeTab_)) rangeTab_ = true;
+        if (button("Notes", {{x + 2 * (tabWidth + gap), 42}, {tabWidth, 44}})) {
             notePicker_ = true; notePage_ = 0;
         }
-        top = 68;
+        top = 94;
     } else {
-        text("TROMBONE", {x, 18 * scale_}, twoColumns ? 3.2f : 2.7f, gold);
-        if (height_ >= 620 && twoColumns) text("Slide position trainer", {x, 56 * scale_}, 1.5f, muted);
         const float notesWidth = std::max(84.0f, 110 * scale_);
+        heading("Trombone Trainer", 18 * scale_, std::max(2.0f, 3.2f * scale_), w - notesWidth - gap, gold);
+        const float subtitleY = twoColumns ? 54 * scale_ : 18 * scale_ + 52;
+        heading("Powered by olcPixelGameEngine3", subtitleY, std::max(1.25f, 1.35f * scale_),
+                twoColumns ? w - notesWidth - gap : w, muted);
+        top = std::max(top, subtitleY + 24);
         if (button("Notes", {{x + w - notesWidth, 18 * scale_}, {notesWidth, 44}})) {
             notePicker_ = true; notePage_ = 0;
         }
@@ -386,7 +395,6 @@ bool Game::OnUserUpdate(float elapsed) {
     if (state != QuizState::Question) dragging_ = false;
     drawSelector();
     if (height_ > width_) text("Rotate for a wider view", {margin_, height_ - 19 * scale_}, 1.0f, muted);
-    else centered("Powered by olcPixelGameEngine 3 / OneLoneCoder.com", {{margin_, height_ - 18 * scale_}, {contentWidth_ - 2 * margin_, 12 * scale_}}, 0.85f, muted);
     return true;
 }
 
