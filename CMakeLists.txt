@@ -54,4 +54,13 @@ if(TRAINER_BUILD_APP)
         "--preload-file" "${TRAINER_ASSET_DIR}@/assets")
     endif()
   endforeach()
+  if(EMSCRIPTEN)
+    add_custom_target(web-site
+      COMMAND ${CMAKE_COMMAND}
+        "-DINPUT_DIR=$<TARGET_FILE_DIR:trombone-trainer>"
+        "-DOUTPUT_DIR=${CMAKE_CURRENT_BINARY_DIR}/site"
+        -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/StageWeb.cmake"
+      DEPENDS trombone-trainer
+      VERBATIM)
+  endif()
 endif()

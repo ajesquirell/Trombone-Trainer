@@ -1,0 +1,16 @@
+# Stage the four browser files for GitHub Pages, itch.io, or another static host.
+if(NOT DEFINED INPUT_DIR OR NOT DEFINED OUTPUT_DIR)
+  message(FATAL_ERROR "StageWeb requires INPUT_DIR and OUTPUT_DIR")
+endif()
+foreach(extension IN ITEMS html js wasm data)
+  if(NOT EXISTS "${INPUT_DIR}/trombone-trainer.${extension}")
+    message(FATAL_ERROR "Missing browser build file: trombone-trainer.${extension}")
+  endif()
+endforeach()
+file(MAKE_DIRECTORY "${OUTPUT_DIR}")
+configure_file("${INPUT_DIR}/trombone-trainer.html" "${OUTPUT_DIR}/index.html" COPYONLY)
+foreach(extension IN ITEMS js wasm data)
+  configure_file("${INPUT_DIR}/trombone-trainer.${extension}"
+    "${OUTPUT_DIR}/trombone-trainer.${extension}" COPYONLY)
+endforeach()
+message(STATUS "Browser site staged in ${OUTPUT_DIR}")

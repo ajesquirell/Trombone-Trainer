@@ -94,6 +94,43 @@ standard `<limits>` include in the build-local Lomse copy for modern GCC.
 The generated PGE3 header is copied without template expansion: its embedded
 font data contains literal `@...@` sequences that must remain unchanged.
 
+## Live version on GitHub Pages
+
+The source repository and playable browser version can live together on GitHub.
+The included [.github/workflows/pages.yml](.github/workflows/pages.yml) tests the
+quiz, builds with pinned Emscripten 6.0.10, and deploys the static game whenever
+`main` changes. Action versions are pinned to full commits.
+
+To enable publishing:
+
+1. Open the repository's **Settings → Pages**. Under **Build and deployment**,
+   select **GitHub Actions** as the Source.
+2. Commit and push the workflow and CMake staging changes to `main`.
+3. Follow **Actions → Build and deploy GitHub Pages**. It can also be started
+   manually with **Run workflow** on `main`.
+
+After the first successful deployment, the expected live URL for this repository
+is [ajesquirell.github.io/Trombone-Trainer](https://ajesquirell.github.io/Trombone-Trainer/).
+Add that URL to the repository's **About → Website** field so visitors can find
+both the code and game. This setup follows GitHub's
+[custom Pages workflow instructions](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages).
+
+To create the same static site locally:
+
+```sh
+cmake --build build-web --target web-site -j2
+python3 -m http.server 8000 --directory build-web/site
+```
+
+Open `http://localhost:8000/`. The site directory contains only `index.html` and
+the game's `.js`, `.wasm`, and `.data` siblings; these relative URLs also work
+under a project subdirectory. The generated files need not be committed. GitHub
+Actions builds and uploads them. CI supplies `CMAKE_POLICY_VERSION_MINIMUM=3.5`
+to accommodate Lomse 0.30.0's older minimum declaration on CMake 4 runners.
+
+Local build/staging and YAML checks passed; a remote GitHub Actions deployment
+has not been executed from this workspace.
+
 ## Play
 
 Choose bass or treble clef (both concert pitch), then 5, 10, 20, or a custom

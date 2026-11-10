@@ -1,5 +1,25 @@
 # Validation record
 
+## Update: GitHub Pages preparation
+
+Added a pinned GitHub Actions workflow to run core tests, build with Emscripten
+6.0.10, and upload/deploy the four-file browser site on pushes to `main` or manual
+dispatch. Added the CMake `web-site` target and `cmake/StageWeb.cmake` for staging
+the HTML as `index.html` and preserving JS/Wasm/data filenames.
+
+- Local `cmake --build build-web --target web-site -j2`: **PASS**.
+- Staged directory contents, HTML script reference, and byte-for-byte comparisons
+  with all four generated build files: **PASS**.
+- Workflow YAML parsing, trigger, permissions, full action pins, and deploy/build
+  dependency checks: **PASS**; independent static workflow review found no blockers.
+- Clean core-only configure/build/CTest using the workflow commands: **PASS**.
+
+No commit, push, repository setting change, or remote deployment was performed.
+The repository owner must select Pages Source **GitHub Actions** and push the new
+files. The expected URL after a successful deployment is
+`https://ajesquirell.github.io/Trombone-Trainer/`. The remote Actions run and live
+site remain unverified.
+
 ## Update: straight neck and foreground slide
 
 Replaced the curved return neck with a horizontal tube connecting directly to
