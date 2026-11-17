@@ -172,7 +172,7 @@ void Game::drawSettings() {
     const float subtitleY = compact ? 25 : 18 * scale_ + 28 * scale_;
     heading("Powered by olcPixelGameEngine3", subtitleY, compact ? 1.25f : std::max(1.25f, 1.35f * scale_), muted);
     float y = compact ? 40 : std::max(height_ < 540 ? 62.0f : 100 * scale_, subtitleY + 25);
-    if (!compact) { text("DIFFICULTY", {x, y}, 1.15f, muted); y += 20; }
+    if (!compact) { text("NOTES", {x, y}, 1.15f, muted); y += 20; }
     const int columns = wide ? 4 : 2;
     const float cell = (w - (columns - 1) * gap) / columns;
     const float rowGap = compact ? 4 : gap;
@@ -349,12 +349,17 @@ void Game::drawTrombone(Rect bounds) {
 void Game::drawQuestion(bool feedback) {
     const float x = margin_, w = contentWidth_ - 2 * x;
     const bool compact = height_ < 540;
-    text("Q " + std::to_string(quiz_.questionIndex() + 1) + " / " + std::to_string(quiz_.questionCount()), {x, compact ? 12.0f : 23 * scale_}, 1.35f, muted);
+    const float headerScale = std::max(1.0f, scale_);
+    const float clefW = std::min(225.0f * headerScale, w * 0.49f);
+    const Rect clefs{{contentWidth_ - x - clefW, 8 * headerScale}, {clefW, std::max(44.0f, 42 * scale_)}};
+    const auto count = std::to_string(quiz_.questionCount());
+    const float headerFont = std::min(std::max(1.4f, 1.35f * scale_),
+        (clefs.pos.x - x - 8 * headerScale) / float(8 * (5 + 2 * count.size())));
+    draw.String({x, 12 * headerScale}, "Q " + std::to_string(quiz_.questionIndex() + 1) + " / " + count,
+                muted, {headerFont, headerFont});
     const auto score = "Score " + std::to_string(quiz_.score());
-    const float scoreScale = std::max(1.4f, 1.35f * scale_);
-    text(score, {compact ? x : contentWidth_ - margin_ - float(score.size()) * 8 * scoreScale, compact ? 31.0f : 23 * scale_}, 1.35f, gold);
-    const float clefW = compact ? std::min(225.0f, w * 0.49f) : std::min(w, 310 * scale_);
-    drawClefs({{compact ? contentWidth_ - x - clefW : x, compact ? 8.0f : 52 * scale_}, {clefW, std::max(44.0f, 42 * scale_)}});
+    draw.String({x, 31 * headerScale}, score, gold, {headerFont, headerFont});
+    drawClefs(clefs);
     const auto* note = quiz_.current();
     if (!note) return;
     const Rect instrument{{x + 8 * scale_, height_ * (compact ? 0.51f : 0.52f)}, {w - 18 * scale_, height_ * 0.23f}};

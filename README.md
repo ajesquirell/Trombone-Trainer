@@ -134,19 +134,19 @@ has not been executed from this workspace.
 
 ## Play
 
-Choose a difficulty, bass or treble clef (both concert pitch), and **5, 10, or 20
+Choose a note preset, bass or treble clef (both concert pitch), and **5, 10, or 20
 questions**, or select **Custom** in the **Questions** row to reveal minus/plus
 controls below it for a **1–100** count. The preset choices stay visible; choosing
-a preset hides the counter. Difficulty controls
-the note pool independently of the question count. The defaults are Easy, bass
+a preset hides the counter. The note preset controls
+the note pool independently of the question count. The defaults are Level 1, bass
 clef, and 10 questions. Settings and the note editor use the full width;
 the slide column appears when practice starts.
 
-| Difficulty | Available pitches |
+| Notes | Available pitches |
 | --- | --- |
-| Easy | Only Bb2, C3, D3, Eb3, F3 (5 notes) |
-| Medium | Bb2, C3, D3, Eb3, F3, G3, A3, Bb3 (8 notes of B-flat major) |
-| Hard | All 13 chromatic pitches from Bb2 through Bb3, including both endpoints |
+| Level 1 | Only Bb2, C3, D3, Eb3, F3 (5 notes) |
+| Level 2 | Bb2, C3, D3, Eb3, F3, G3, A3, Bb3 (8 notes of B-flat major) |
+| Level 3 | All 13 chromatic pitches from Bb2 through Bb3, including both endpoints |
 | Custom | Your saved range and individual note choices |
 
 Selecting **Custom** reveals a **Choose notes** button. Press it to open the editor.
@@ -156,7 +156,7 @@ exact pitches, including their octaves. The initial Custom range is **B-flat
 **All** enables the entire pool and **None** clears it; the bounds still apply.
 Use Prev/Next on smaller screens to reach every pitch. **Done** returns to the
 start screen. Start is disabled if Custom has no eligible notes. Switching
-difficulty preserves your Custom choices and the question count.
+the note preset preserves your Custom choices and the question count.
 
 Range and note controls retain octave numbers and compact accidentals (for
 example, `Bb3` or `C#4`); question headings show only `B-flat` or `C-sharp`.

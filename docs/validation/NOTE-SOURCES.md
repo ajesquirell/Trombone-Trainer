@@ -3,7 +3,7 @@
 All pitches are concert pitches in scientific pitch notation: middle C is C4
 (MIDI 60). Switching clef changes the engraved clef only; it does not transpose.
 The full Custom pool contains every chromatic pitch from B-flat 2 through D4.
-New sessions default to Easy: Bb2, C3, D3, Eb3, and F3. The stored Custom range
+New sessions default to Level 1: Bb2, C3, D3, Eb3, and F3. The stored Custom range
 defaults to the inclusive B-flat 2 through B-flat 3 octave (MIDI 46–58).
 
 | Pitch | Picker | MIDI | Lomse token | Reference position | Also accepted |

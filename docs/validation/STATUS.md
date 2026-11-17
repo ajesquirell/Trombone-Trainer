@@ -36,29 +36,33 @@ Executed validation:
 
 ## Update: difficulty presets and simplified settings
 
-The start screen now offers Easy, Medium, Hard, and Custom, followed by clef,
-question count, and Start!. Easy defaults to exactly Bb2, C3, D3, Eb3, F3;
-Medium supplies the eight B-flat major pitches from Bb2 through Bb3; Hard
+The Notes selector now offers Level 1, Level 2, Level 3, and Custom, followed by
+clef, question count, and Start!. Level 1 defaults to exactly Bb2, C3, D3, Eb3, F3;
+Level 2 supplies the eight B-flat major pitches from Bb2 through Bb3; Level 3
 supplies all 13 chromatic pitches from Bb2 through Bb3, including both endpoints.
-Its description reads "Bb Chromatic (13 notes)"; Medium reads "Bb major (8 notes)".
-The full 17-pitch pool remains available in Custom. Difficulty never changes the
+Its description reads "Bb Chromatic (13 notes)"; Level 2 reads "Bb major (8 notes)".
+The full 17-pitch pool remains available in Custom. Selecting a note preset never changes the
 question count. Custom reveals a Choose notes button that opens the existing
 range and exact-pitch editors; Done returns to the start screen. On compact
 screens, Choose notes and Start share the bottom row. Custom choices survive
 preset changes.
 
-Difficulty, Clef, and Questions now occupy separate full-width rows.
+Notes, Clef, and Questions now occupy separate full-width rows.
 Section spacing adapts to available height; compact layouts retain Start and
 the 44px controls within the viewport. Compact layouts hide all three section
-headings, including Difficulty, and reclaim their vertical space.
+headings, including Notes, and reclaim their vertical space.
 The Questions row always offers 5, 10, 20, and Custom. Selecting Custom reveals
 the 1–100 minus/plus counter below the selector; choosing a preset hides it.
 Only the selected mode is highlighted, including Custom counts equal to a preset.
 Settings and the note editor always use the full width, hiding the slide column.
-Very short settings screens use four Difficulty buttons in one row, reserving
+Very short settings screens use four note-preset buttons in one row, reserving
 room for the extra counter row. Gameplay retains its full-height slide column.
 Submit, Next question, and See results share the same button rectangle, keeping
 both its position and size fixed while feedback appears.
+The gameplay header consistently places question progress at the top left,
+score underneath, and the Bass/Treble controls at the top right. Header labels
+fit the available left-hand space for rounds up to 100 questions. The hint reads
+"Move slide or choose position on the right", with adaptive wrapping on phones.
 
 Executed validation:
 

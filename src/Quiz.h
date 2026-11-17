@@ -15,9 +15,9 @@ enum class Difficulty { Easy, Medium, Hard, Custom };
 
 [[nodiscard]] constexpr std::string_view difficultyName(Difficulty difficulty) {
     switch (difficulty) {
-        case Difficulty::Easy: return "Easy";
-        case Difficulty::Medium: return "Medium";
-        case Difficulty::Hard: return "Hard";
+        case Difficulty::Easy: return "Level 1";
+        case Difficulty::Medium: return "Level 2";
+        case Difficulty::Hard: return "Level 3";
         case Difficulty::Custom: return "Custom";
     }
     return {};
