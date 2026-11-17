@@ -31,6 +31,7 @@ private:
     void syncNotation();
     void drawSettings();
     void drawNotePicker();
+    void drawCustomRange();
     void drawQuestion(bool feedback);
     void drawResults();
     void drawSelector();
@@ -46,7 +47,7 @@ private:
     std::unique_ptr<Notation> notation_;
     Pointer pointer_;
     std::optional<std::uint32_t> touchId_;
-    bool dragging_ = false, rangeTab_ = false, notePicker_ = false;
+    bool dragging_ = false, rangeTab_ = false, notePicker_ = false, customCount_ = false;
     int notePage_ = 0;
     float mouseCooldown_ = 0, scale_ = 1, width_ = 0, height_ = 0, contentWidth_ = 0, margin_ = 0;
     std::string renderedNotes_, notationError_;

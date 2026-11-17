@@ -1,5 +1,51 @@
 # Validation record
 
+## Update: difficulty presets and simplified settings
+
+The start screen now offers Easy, Medium, Hard, and Custom, followed by clef,
+question count, and Start!. Easy defaults to exactly Bb2, C3, D3, Eb3, F3;
+Medium supplies the eight B-flat major pitches from Bb2 through Bb3; Hard
+supplies all 13 chromatic pitches from Bb2 through Bb3, including both endpoints.
+Its description reads "Bb Chromatic (13 notes)"; Medium reads "Bb major (8 notes)".
+The full 17-pitch pool remains available in Custom. Difficulty never changes the
+question count. Custom reveals a Choose notes button that opens the existing
+range and exact-pitch editors; Done returns to the start screen. On compact
+screens, Choose notes and Start share the bottom row. Custom choices survive
+preset changes.
+
+Difficulty, Clef, and Questions now occupy separate full-width rows.
+Section spacing adapts to available height; compact layouts retain Start and
+the 44px controls within the viewport. Compact layouts hide all three section
+headings, including Difficulty, and reclaim their vertical space.
+The Questions row always offers 5, 10, 20, and Custom. Selecting Custom reveals
+the 1–100 minus/plus counter below the selector; choosing a preset hides it.
+Only the selected mode is highlighted, including Custom counts equal to a preset.
+Settings and the note editor always use the full width, hiding the slide column.
+Very short settings screens use four Difficulty buttons in one row, reserving
+room for the extra counter row. Gameplay retains its full-height slide column.
+Submit, Next question, and See results share the same button rectangle, keeping
+both its position and size fixed while feedback appears.
+
+Executed validation:
+
+- Native application compile/link and CTest: **PASS**, 2/2 tests.
+- Core executable: **3,038 checks, 0 failures**, natively and compiled with
+  Emscripten then executed through Node. Coverage includes exact preset pools,
+  generated questions, independent question counts, saved Custom choices,
+  scoring, and replay. Agent-executed strict GCC and UBSan runs also passed.
+- Emscripten application build and `web-site` staging: **PASS**. The temporary
+  cache initially lacked zlib; copying the installed SDK cache into writable
+  `/tmp` resolved this without SDK or source changes or network downloads.
+- Staged HTML/JS/Wasm/data match the current generated files byte for byte;
+  the four-file itch.io ZIP was refreshed and its integrity checked.
+- Independent source/layout review of full-width Settings and the note editor
+  across 11 viewports from 320x300 through 1920x1080, both count modes and preset
+  or Custom difficulty: no overlapping or clipped controls; targets remain at
+  least 44px. Reviewed resizing and the gameplay slide-column condition.
+- Browser-launch retry: **BLOCKED** before page load, with Chrome reporting
+  `crashpad/util/linux/socket.cc:45 ... setsockopt: Operation not permitted`.
+  No browser screenshot, visual rendering, or physical touch test is claimed.
+
 ## Update: public PGE3 pin and modern FetchContent
 
 GitHub Actions exposed an incorrect repository/commit pairing: the old PGE3

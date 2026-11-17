@@ -1,4 +1,4 @@
-# *Warning - This is AI slop*
+# *Warning - This is all AI generated!*
 
 # Trombone Slide Position Trainer
 
@@ -134,22 +134,35 @@ has not been executed from this workspace.
 
 ## Play
 
-Choose bass or treble clef (both concert pitch), then 5, 10, 20, or a custom
-1–100 questions using minus/plus. Set the **Low** and **High** notes using their
-minus/plus controls; both endpoints are included. The range pickers retain octave
-numbers and show compact accidentals (for example, `Bb3` or `C#4`), while question
-headings show only `B-flat` or `C-sharp`. Where space allows, Lomse previews the
-two range limits on a staff. On short, narrow screens, switch between the
-**Quiz** and **Range** tabs before starting; the **Notes** tab opens the exact-pitch picker.
+Choose a difficulty, bass or treble clef (both concert pitch), and **5, 10, or 20
+questions**, or select **Custom** in the **Questions** row to reveal minus/plus
+controls below it for a **1–100** count. The preset choices stay visible; choosing
+a preset hides the counter. Difficulty controls
+the note pool independently of the question count. The defaults are Easy, bass
+clef, and 10 questions. Settings and the note editor use the full width;
+the slide column appears when practice starts.
 
-The default range is **B-flat 2–B-flat 3**. Open **Notes** to enable or disable
-exact pitches individually, including their octaves. Teal buttons are included;
-gray pitches lie outside your current range. **All** enables the entire pool,
-and **None** clears it; the range still limits which enabled pitches can appear.
-Use Prev/Next on smaller screens to reach every pitch. Start is disabled until at
-least one pitch in the range is enabled. Replay preserves your range and choices.
+| Difficulty | Available pitches |
+| --- | --- |
+| Easy | Only Bb2, C3, D3, Eb3, F3 (5 notes) |
+| Medium | Bb2, C3, D3, Eb3, F3, G3, A3, Bb3 (8 notes of B-flat major) |
+| Hard | All 13 chromatic pitches from Bb2 through Bb3, including both endpoints |
+| Custom | Your saved range and individual note choices |
 
-Start practice. Read the note, tap or drag the full-height seven-band column
+Selecting **Custom** reveals a **Choose notes** button. Press it to open the editor.
+Use **Range** to adjust the inclusive Low/High bounds and **Notes** to enable
+exact pitches, including their octaves. The initial Custom range is **B-flat
+2–B-flat 3**. Teal notes are included; gray pitches lie outside your range.
+**All** enables the entire pool and **None** clears it; the bounds still apply.
+Use Prev/Next on smaller screens to reach every pitch. **Done** returns to the
+start screen. Start is disabled if Custom has no eligible notes. Switching
+difficulty preserves your Custom choices and the question count.
+
+Range and note controls retain octave numbers and compact accidentals (for
+example, `Bb3` or `C#4`); question headings show only `B-flat` or `C-sharp`.
+Where space allows, Lomse previews the two Custom range limits on a staff.
+
+Press **Start!**. Read the note, tap or drag the full-height seven-band column
 (**7 at the top, 1 at the bottom**), and press Submit. A correct reference **or ordinary
 alternate position** earns a point. Feedback stays visible until Next. Results
 show score and accuracy; Play Again keeps settings and resets the exercise.
@@ -160,11 +173,12 @@ and the bell faces right in the same direction as the slide. The illustration ha
 a curved, hollow bell, rear tuning bow, straight return neck, silver inner rails and rigid
 outer slide; it is drawn in one batch of PGE3 primitives, with uniform scaling.
 The slide is drawn in front of the bell where the two overlap.
-The pool covers **17 chromatic pitches, B-flat 2 through D4**.
+Custom supports **17 chromatic pitches, B-flat 2 through D4**.
 See [note and alternate-position sources](docs/validation/NOTE-SOURCES.md).
 Consecutive questions do not repeat a pitch unless the range contains only one
 note. Play Again preserves the selected range. Position resets to 1 each question.
-Landscape is preferred; portrait retains controls and asks for a wider view.
+Landscape is preferred; portrait retains controls and asks for a wider view
+during practice.
 
 ## Tests and platform diagnostics
 
@@ -178,7 +192,8 @@ ctest --test-dir build-tests --output-on-failure
 
 They check pitches/octaves, all seven reference/alternate positions, wrong
 answers, single submission, feedback/results transitions, clamped question
-counts, inclusive pitch bounds, exact-pitch toggles, empty selections, singleton
+counts independent of difficulty, exact preset membership, saved Custom choices,
+inclusive pitch bounds, exact-pitch toggles, empty selections, singleton
 ranges, replay, octave-free display
 names, clef invariance, random sequence constraints, and reversed selector edge
 coordinates at different sizes. Checks stay active in Release builds.

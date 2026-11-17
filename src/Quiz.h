@@ -7,12 +7,27 @@
 #include <cmath>
 #include <cstdint>
 #include <random>
+#include <string_view>
 
 namespace trombone {
+
+enum class Difficulty { Easy, Medium, Hard, Custom };
+
+[[nodiscard]] constexpr std::string_view difficultyName(Difficulty difficulty) {
+    switch (difficulty) {
+        case Difficulty::Easy: return "Easy";
+        case Difficulty::Medium: return "Medium";
+        case Difficulty::Hard: return "Hard";
+        case Difficulty::Custom: return "Custom";
+    }
+    return {};
+}
 
 struct Settings {
     Clef clef = Clef::Bass;
     int questionCount = 10;
+    Difficulty difficulty = Difficulty::Easy;
+    // These choices are retained while a preset supplies the active note pool.
     int lowestMidi = 46;
     int highestMidi = 58;
     std::uint32_t enabledNotes = kAllNotesMask;
@@ -25,6 +40,17 @@ struct Settings {
     }
 
     [[nodiscard]] constexpr bool includesMidi(int midi) const {
+        switch (difficulty) {
+            case Difficulty::Easy:
+                return midi == 46 || midi == 48 || midi == 50 || midi == 51 || midi == 53;
+            case Difficulty::Medium:
+                return midi == 46 || midi == 48 || midi == 50 || midi == 51 || midi == 53 ||
+                       midi == 55 || midi == 57 || midi == 58;
+            case Difficulty::Hard:
+                return midi >= 46 && midi <= 58;
+            case Difficulty::Custom:
+                break;
+        }
         auto normalized = *this;
         normalized.normalize();
         if (midi < normalized.lowestMidi || midi > normalized.highestMidi) return false;

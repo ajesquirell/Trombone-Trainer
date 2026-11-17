@@ -89,6 +89,128 @@ void displayNames() {
     check(compactFlat.displayName() == "B-flat", "display name also handles an octave without a space");
 }
 
+void defaultDifficultyPool() {
+    Settings settings;
+    check(settings.difficulty == Difficulty::Easy && settings.allowedNoteCount() == 5,
+          "default Easy difficulty permits exactly five pitches");
+    for (const auto& note : kNotes) {
+        const bool expected = note.midi == 46 || note.midi == 48 || note.midi == 50 ||
+                              note.midi == 51 || note.midi == 53;
+        check(settings.includes(note) == expected,
+              "default Easy permits only Bb2, C3, D3, Eb3, and F3");
+    }
+    check(!settings.includesMidi(58), "Easy excludes the higher Bb3 octave");
+}
+
+void difficultyPools() {
+    struct Preset {
+        Difficulty difficulty;
+        std::array<int, 17> pitches;
+        int count;
+    };
+    constexpr std::array presets{
+        Preset{Difficulty::Easy, {46, 48, 50, 51, 53}, 5},
+        Preset{Difficulty::Medium, {46, 48, 50, 51, 53, 55, 57, 58}, 8},
+        Preset{Difficulty::Hard, {46, 47, 48, 49, 50, 51, 52, 53, 54,
+                                  55, 56, 57, 58}, 13},
+    };
+    for (const auto& preset : presets) {
+        Quiz quiz;
+        quiz.settings.difficulty = preset.difficulty;
+        // A preset must work even when the stored Custom selection is empty
+        // and its only range pitch is outside every preset.
+        quiz.settings.lowestMidi = 62;
+        quiz.settings.highestMidi = 62;
+        quiz.settings.enabledNotes = 0;
+        check(quiz.settings.allowedNoteCount() == preset.count,
+              "each preset supplies its complete pool independently of Custom settings");
+        for (const auto& note : kNotes) {
+            const bool expected = std::find(preset.pitches.begin(),
+                                           preset.pitches.begin() + preset.count,
+                                           note.midi) != preset.pitches.begin() + preset.count;
+            check(quiz.settings.includesMidi(note.midi) == expected &&
+                      quiz.settings.includes(note) == expected,
+                  "preset membership matches its exact pitch list across every playable note");
+        }
+        check(!quiz.settings.includesMidi(45) && !quiz.settings.includesMidi(63),
+              "presets never include a pitch outside the playable pool");
+        check(quiz.start(100, 404), "a preset starts even when Custom has no enabled notes");
+        std::array<bool, 17> seen{};
+        const Note* previous = nullptr;
+        for (int i = 0; i < 100; ++i) {
+            const auto* note = quiz.current();
+            check(note != nullptr, "preset rounds generate every requested question");
+            if (!note) break;
+            const auto found = std::find(preset.pitches.begin(),
+                                         preset.pitches.begin() + preset.count, note->midi);
+            check(found != preset.pitches.begin() + preset.count,
+                  "generated questions stay inside the exact selected preset");
+            check(note != previous, "preset rounds avoid adjacent repeated notes");
+            previous = note;
+            if (found != preset.pitches.begin() + preset.count) {
+                seen[static_cast<std::size_t>(found - preset.pitches.begin())] = true;
+            }
+            quiz.select(note->referencePosition);
+            quiz.submit();
+            quiz.next();
+        }
+        for (int i = 0; i < preset.count; ++i) {
+            check(seen[static_cast<std::size_t>(i)], "seeded preset round reaches every allowed pitch");
+        }
+        check(quiz.state() == QuizState::Results && quiz.score() == 100,
+              "every preset keeps the selected round length and normal scoring");
+    }
+}
+
+void independentDifficultyAndCount() {
+    constexpr std::array modes{
+        Difficulty::Easy, Difficulty::Medium, Difficulty::Hard, Difficulty::Custom};
+    for (int count : {1, 5, 10, 20, 100}) {
+        Quiz quiz;
+        quiz.settings.questionCount = count;
+        quiz.settings.clef = Clef::Treble;
+        quiz.settings.lowestMidi = 50;
+        quiz.settings.highestMidi = 58;
+        const auto customMask = (std::uint32_t{1} << 4) | (std::uint32_t{1} << 12) |
+                                (std::uint32_t{1} << 16); // Bb3, D3, and Bb2 outside range.
+        quiz.settings.enabledNotes = customMask;
+        for (const auto difficulty : modes) {
+            quiz.settings.difficulty = difficulty;
+            check(quiz.settings.questionCount == count && quiz.settings.clef == Clef::Treble &&
+                      quiz.settings.lowestMidi == 50 && quiz.settings.highestMidi == 58 &&
+                      quiz.settings.enabledNotes == customMask,
+                  "changing difficulty preserves question count, clef, and stored Custom selection");
+            check(quiz.start(quiz.settings.questionCount, 512) && quiz.questionCount() == count,
+                  "each difficulty independently starts every supported round length");
+            if (difficulty == Difficulty::Custom) {
+                check(quiz.settings.allowedNoteCount() == 2 &&
+                          quiz.settings.includesMidi(50) && quiz.settings.includesMidi(58) &&
+                          !quiz.settings.includesMidi(46) && !quiz.settings.includesMidi(53),
+                      "returning to Custom restores the saved exact pitches intersected with its range");
+            }
+            for (int i = 0; i < count; ++i) {
+                const auto* note = quiz.current();
+                check(note && quiz.settings.includes(*note),
+                      "difficulty rounds draw only pitches in their effective selection");
+                if (!note) break;
+                quiz.select(note->referencePosition);
+                quiz.submit();
+                quiz.next();
+            }
+            check(quiz.state() == QuizState::Results && quiz.score() == count,
+                  "round completion follows the chosen count at every difficulty");
+            check(quiz.replay(513) && quiz.questionCount() == count &&
+                      quiz.settings.questionCount == count && quiz.settings.difficulty == difficulty &&
+                      quiz.settings.clef == Clef::Treble && quiz.settings.lowestMidi == 50 &&
+                      quiz.settings.highestMidi == 58 && quiz.settings.enabledNotes == customMask,
+                  "replay preserves difficulty, count, clef, and the saved Custom range and pitches");
+            check(quiz.questionIndex() == 0 && quiz.score() == 0 && quiz.current() &&
+                      quiz.settings.includes(*quiz.current()),
+                  "replay resets progress and draws from the retained difficulty pool");
+        }
+    }
+}
+
 void roundTransitions() {
     Quiz quiz;
     check(quiz.settings.clef == Clef::Bass && quiz.settings.questionCount == 10,
@@ -146,6 +268,7 @@ void questionGeneration() {
     Quiz other;
     Quiz wrong;
     for (auto* quiz : {&left, &right, &other, &wrong}) {
+        quiz->settings.difficulty = Difficulty::Custom;
         quiz->settings.lowestMidi = 46;
         quiz->settings.highestMidi = 62;
     }
@@ -209,7 +332,8 @@ void questionGeneration() {
 void noteRanges() {
     Quiz quiz;
     check(quiz.settings.lowestMidi == 46 && quiz.settings.highestMidi == 58,
-          "default range is the chromatic octave from Bb2 to Bb3");
+          "stored Custom range defaults to the chromatic octave from Bb2 to Bb3");
+    quiz.settings.difficulty = Difficulty::Custom;
     quiz.settings.lowestMidi = 58;
     quiz.settings.highestMidi = 60;
     quiz.start(100, 123456);
@@ -278,6 +402,7 @@ void normalizedRanges() {
         Range{59, 500, 59, 62},
     };
     Quiz quiz;
+    quiz.settings.difficulty = Difficulty::Custom;
     for (const auto& range : ranges) {
         quiz.settings.lowestMidi = range.low;
         quiz.settings.highestMidi = range.high;
@@ -318,11 +443,12 @@ void normalizedRanges() {
 // selected range, and attempting to sample an empty distribution.
 void exactPitchSelection() {
     Settings settings;
+    settings.difficulty = Difficulty::Custom;
     check(settings.enabledNotes == kAllNotesMask && kAllNotesMask == 0x1ffffu,
           "the mask has one enabled bit for each pool note and no other bits");
     check(settings.allowedNoteCount() == 13 && settings.includesMidi(46) &&
               settings.includesMidi(58) && !settings.includesMidi(59),
-          "default selection includes the full Bb2 to Bb3 chromatic octave");
+          "default Custom selection includes the full Bb2 to Bb3 chromatic octave");
     check(settings.includes(kNotes.back()) && !settings.includes(kNotes.front()) &&
               !settings.includesMidi(45) && !settings.includesMidi(63),
           "selection rejects pitches outside the pool and selected bounds");
@@ -343,6 +469,7 @@ void exactPitchSelection() {
           "normalization stores bounded limits and discards unknown mask bits");
 
     Quiz quiz;
+    quiz.settings.difficulty = Difficulty::Custom;
     quiz.settings.lowestMidi = 46;
     quiz.settings.highestMidi = 62;
     // Bb2 and Bb3 have the same pitch class but remain independent choices.
@@ -452,6 +579,9 @@ void positionMapping() {
 int main() {
     notePool();
     displayNames();
+    defaultDifficultyPool();
+    difficultyPools();
+    independentDifficultyAndCount();
     roundTransitions();
     questionGeneration();
     noteRanges();

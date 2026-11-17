@@ -2,8 +2,9 @@
 
 All pitches are concert pitches in scientific pitch notation: middle C is C4
 (MIDI 60). Switching clef changes the engraved clef only; it does not transpose.
-The pool contains every chromatic pitch from B-flat 2 through D4. New rounds
-default to the inclusive B-flat 2 through B-flat 3 octave (MIDI 46–58).
+The full Custom pool contains every chromatic pitch from B-flat 2 through D4.
+New sessions default to Easy: Bb2, C3, D3, Eb3, and F3. The stored Custom range
+defaults to the inclusive B-flat 2 through B-flat 3 octave (MIDI 46–58).
 
 | Pitch | Picker | MIDI | Lomse token | Reference position | Also accepted |
 | --- | --- | ---: | --- | ---: | ---: |
@@ -60,11 +61,12 @@ Lomse tokens in the table specify each octave and accidental explicitly.
 The native note-data tests independently list every MIDI pitch, token,
 reference, and complete accepted-position set from the source table.
 
-Each picker toggle controls one exact pitch, including its octave. A pitch is
+In Custom, each picker toggle controls one exact pitch, including its octave. A pitch is
 eligible only when its toggle is enabled and its MIDI number lies within the
 inclusive selected range. Toggles retain their values when the range changes;
 an enabled pitch outside the range stays excluded. Internally, bit `i` of
 `Settings::enabledNotes` corresponds to `kNotes[i]` in descending D4–B-flat 2
-order. The default mask enables all 17 toggles, giving 13 eligible default
-pitches. Unknown mask bits are discarded when settings are normalized. An
+order. The default mask enables all 17 toggles, giving 13 eligible initial Custom
+pitches. Presets use their own pools and retain the stored Custom settings.
+Unknown mask bits are discarded when settings are normalized. An
 empty intersection keeps the quiz at settings and cannot start or replay a round.

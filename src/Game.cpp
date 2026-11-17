@@ -128,57 +128,113 @@ void Game::syncNotation() {
 }
 
 void Game::drawSettings() {
-    if (notePicker_) { drawNotePicker(); return; }
+    if (notePicker_ && quiz_.settings.difficulty == Difficulty::Custom) {
+        drawNotePicker(); return;
+    }
+    notePicker_ = false;
     const float x = margin_, w = contentWidth_ - 2 * x;
     const float gap = std::max(8.0f, 10 * scale_), control = std::max(44.0f, 48 * scale_);
-    const bool twoColumns = w >= 420;
-    const bool tabs = !twoColumns && height_ < 500;
-    const float column = twoColumns ? (w - 2 * gap) / 2 : w;
-    const float rightX = twoColumns ? x + column + 2 * gap : x;
-    float top = height_ < 540 ? 62.0f : 100 * scale_;
-    auto heading = [&](std::string_view label, float y, float size, float width, olc::Pixel color) {
-        const float fit = std::min(size, width / draw.GetTextSize(label, true).x);
+    const bool wide = w >= 420 || height_ < 360;
+    const bool compact = height_ < (wide ? 480 : 500);
+    const bool showCustomCount = customCount_;
+    auto heading = [&](std::string_view label, float y, float size, olc::Pixel color) {
+        const float fit = std::min(size, w / draw.GetTextSize(label, true).x);
         draw.StringProp({x, y}, label, color, {fit, fit});
     };
-    if (tabs) {
-        heading("Trombone Trainer", 4, 2.0f, w, gold);
-        heading("Powered by olcPixelGameEngine3", 25, 1.25f, w, muted);
-        const float tabWidth = (w - 2 * gap) / 3;
-        if (button("Quiz", {{x, 42}, {tabWidth, 44}}, !rangeTab_)) rangeTab_ = false;
-        if (button("Range", {{x + tabWidth + gap, 42}, {tabWidth, 44}}, rangeTab_)) rangeTab_ = true;
-        if (button("Notes", {{x + 2 * (tabWidth + gap), 42}, {tabWidth, 44}})) {
-            notePicker_ = true; notePage_ = 0;
-        }
-        top = 94;
-    } else {
-        const float notesWidth = std::max(84.0f, 110 * scale_);
-        heading("Trombone Trainer", 18 * scale_, std::max(2.0f, 3.2f * scale_), w - notesWidth - gap, gold);
-        const float subtitleY = twoColumns ? 54 * scale_ : 18 * scale_ + 52;
-        heading("Powered by olcPixelGameEngine3", subtitleY, std::max(1.25f, 1.35f * scale_),
-                twoColumns ? w - notesWidth - gap : w, muted);
-        top = std::max(top, subtitleY + 24);
-        if (button("Notes", {{x + w - notesWidth, 18 * scale_}, {notesWidth, 44}})) {
-            notePicker_ = true; notePage_ = 0;
+    heading("Trombone Trainer", compact ? 4 : 18 * scale_, compact ? 2.0f : std::max(2.0f, 3.2f * scale_), gold);
+    const float subtitleY = compact ? 25 : 18 * scale_ + 28 * scale_;
+    heading("Powered by olcPixelGameEngine3", subtitleY, compact ? 1.25f : std::max(1.25f, 1.35f * scale_), muted);
+    float y = compact ? 40 : std::max(height_ < 540 ? 62.0f : 100 * scale_, subtitleY + 25);
+    if (!compact) { text("DIFFICULTY", {x, y}, 1.15f, muted); y += 20; }
+    const int columns = wide ? 4 : 2;
+    const float cell = (w - (columns - 1) * gap) / columns;
+    const float rowGap = compact ? 4 : gap;
+    const std::array difficulties{Difficulty::Easy, Difficulty::Medium, Difficulty::Hard, Difficulty::Custom};
+    for (int i = 0; i < int(difficulties.size()); ++i) {
+        const auto difficulty = difficulties[std::size_t(i)];
+        if (button(difficultyName(difficulty), {{x + (i % columns) * (cell + gap), y + (i / columns) * (control + rowGap)}, {cell, control}},
+                   quiz_.settings.difficulty == difficulty)) {
+            quiz_.settings.difficulty = difficulty;
         }
     }
+    const int rows = wide ? 1 : 2;
+    y += rows * control + (rows - 1) * rowGap;
+    if (!compact) {
+        y += gap;
+        if (quiz_.settings.difficulty == Difficulty::Custom) {
+            const std::string label = "Choose notes (" + std::to_string(quiz_.settings.allowedNoteCount()) + ")";
+            if (button(label, {{x, y}, {w, control}})) { notePicker_ = true; rangeTab_ = false; notePage_ = 0; }
+            y += control;
+        } else {
+            const auto description = quiz_.settings.difficulty == Difficulty::Easy ? "Bb, C, D, Eb, F" :
+                quiz_.settings.difficulty == Difficulty::Medium ? "Bb major (8 notes)" : "Bb Chromatic (13 notes)";
+            centered(description, {{x, y}, {w, 20}}, 1.25f, muted);
+            y += 20;
+        }
+    }
+    const float startY = height_ - control - (compact ? 8 : 26);
+    const float headingHeight = compact ? 0 : 20;
+    const float counterHeight = showCustomCount ? control + rowGap : 0;
+    const float sectionGap = std::clamp((startY - y - 2 * (control + headingHeight) - counterHeight) / 3, 4.0f, 36.0f * scale_);
+    y += sectionGap;
+    if (!compact) { text("CLEF", {x, y}, 1.15f, muted); y += 20; }
+    drawClefs({{x, y}, {w, control}});
+    y += control + sectionGap;
+    if (!compact) { text("QUESTIONS", {x, y}, 1.15f, muted); y += 20; }
+    const float countGap = wide ? gap : std::clamp((w - 3 * control - 76) / 3, 2.0f, gap);
+    const float presetWidth = wide ? (w - 3 * countGap) / 4 : control;
+    float countX = x;
+    for (int count : {5, 10, 20}) {
+        if (button(std::to_string(count), {{countX, y}, {presetWidth, control}}, !customCount_ && quiz_.settings.questionCount == count)) {
+            quiz_.settings.questionCount = count; customCount_ = false;
+        }
+        countX += presetWidth + countGap;
+    }
+    if (button("Custom", {{countX, y}, {x + w - countX, control}}, customCount_)) customCount_ = true;
+    if (showCustomCount) {
+        y += control + rowGap;
+        if (button("-", {{x, y}, {control, control}}, false, quiz_.settings.questionCount > 1)) --quiz_.settings.questionCount;
+        centered(std::to_string(quiz_.settings.questionCount),
+                 {{x + control + gap, y}, {w - 2 * (control + gap), control}}, 1.6f, gold);
+        if (button("+", {{x + w - control, y}, {control, control}}, false, quiz_.settings.questionCount < 100)) ++quiz_.settings.questionCount;
+    }
+    float startX = x, startWidth = w;
+    const bool compactCustom = compact && quiz_.settings.difficulty == Difficulty::Custom;
+    if (compactCustom) {
+        startWidth = (w - gap) / 2;
+        if (button("Choose notes", {{x, startY}, {startWidth, control}})) {
+            notePicker_ = true; rangeTab_ = false; notePage_ = 0;
+        }
+        startX += startWidth + gap;
+    }
+    const bool hasNotes = quiz_.settings.allowedNoteCount() > 0;
+    if (button("Start!", {{startX, startY}, {startWidth, control}}, true, hasNotes)) {
+        if (quiz_.start(quiz_.settings.questionCount, seed())) renderedNotes_.clear();
+    }
+}
 
-    // One large decrement/increment pair for question count and each pitch bound.
-    auto adjust = [&](std::string_view label, std::string_view value, int& setting,
-                      int minimum, int maximum, float left, float y, float width) {
-        const float valueWidth = std::max(54.0f, width * 0.24f);
-        const float buttonGap = 4;
-        const float minusX = left + width - 2 * control - valueWidth - 2 * buttonGap;
-        centered(label, {{left, y}, {minusX - left - buttonGap, control}}, 1.4f, muted);
-        if (button("-", {{minusX, y}, {control, control}}, false, setting > minimum)) --setting;
-        centered(value, {{minusX + control + buttonGap, y}, {valueWidth, control}}, 1.6f, gold);
-        if (button("+", {{left + width - control, y}, {control, control}}, false, setting < maximum)) ++setting;
-    };
+void Game::drawCustomRange() {
+    const float x = margin_, w = contentWidth_ - 2 * x;
+    const float gap = 8, control = std::max(44.0f, 48 * scale_);
+    const float top = height_ < 360 ? 84.0f : 104.0f;
     auto pitchLabel = [](int midi) {
         const auto note = std::find_if(kNotes.begin(), kNotes.end(),
                                       [midi](const Note& note) { return note.midi == midi; });
-        return std::string(note->compactName());
+        return note->compactName();
     };
-    auto rangePreview = [&](Rect box) {
+    auto adjust = [&](std::string_view label, int& setting, int minimum, int maximum, float y) {
+        const float valueWidth = std::max(54.0f, w * 0.24f);
+        const float minusX = x + w - 2 * control - valueWidth - 8;
+        centered(label, {{x, y}, {minusX - x - 4, control}}, 1.4f, muted);
+        if (button("-", {{minusX, y}, {control, control}}, false, setting > minimum)) --setting;
+        centered(pitchLabel(setting), {{minusX + control + 4, y}, {valueWidth, control}}, 1.6f, gold);
+        if (button("+", {{x + w - control, y}, {control, control}}, false, setting < maximum)) ++setting;
+    };
+    adjust("Low", quiz_.settings.lowestMidi, kNotes.back().midi, quiz_.settings.highestMidi, top);
+    adjust("High", quiz_.settings.highestMidi, quiz_.settings.lowestMidi, kNotes.front().midi, top + control + gap);
+    const float doneY = height_ - control - 16, previewY = top + 2 * (control + gap);
+    const float previewHeight = std::min(180.0f * scale_, doneY - gap - previewY);
+    if (previewHeight >= 70) {
         const auto low = std::find_if(kNotes.begin(), kNotes.end(),
             [&](const Note& note) { return note.midi == quiz_.settings.lowestMidi; });
         const auto high = std::find_if(kNotes.begin(), kNotes.end(),
@@ -191,58 +247,13 @@ void Game::drawSettings() {
             try { notation_->render(*this, notes, treble); notationError_.clear(); }
             catch (const std::exception& error) { notationError_ = error.what(); }
         }
+        const Rect box{{x, previewY}, {w, previewHeight}};
         draw.FilledRoundedRect(box.pos, box.size, 8 * scale_, {250, 249, 244});
         if (notation_ && notationError_.empty())
             notation_->draw(*this, box.pos + olc::vf2d{6, 6}, box.size - olc::vf2d{12, 12});
         else wrapped("Notation unavailable: " + notationError_, box, 1.05f, background);
-    };
-    auto countControls = [&](float left, float y, bool heading) {
-        if (heading) { text("QUESTIONS", {left, y}, 1.25f, muted); y += 20; }
-        const float cell = (column - 2 * gap) / 3;
-        for (int i = 0; i < 3; ++i) {
-            const int count = i == 0 ? 5 : i == 1 ? 10 : 20;
-            if (button(std::to_string(count), {{left + i * (cell + gap), y}, {cell, control}}, quiz_.settings.questionCount == count))
-                quiz_.settings.questionCount = count;
-        }
-        y += control + gap;
-        adjust("Count", std::to_string(quiz_.settings.questionCount), quiz_.settings.questionCount, 1, 100, left, y, column);
-        return y + control;
-    };
-    auto rangeControls = [&](float left, float y) {
-        text("NOTE RANGE", {left, y}, 1.15f, muted);
-        y += 20;
-        adjust("Low", pitchLabel(quiz_.settings.lowestMidi), quiz_.settings.lowestMidi,
-               kNotes.back().midi, quiz_.settings.highestMidi, left, y, column);
-        y += control + gap;
-        adjust("High", pitchLabel(quiz_.settings.highestMidi), quiz_.settings.highestMidi,
-               quiz_.settings.lowestMidi, kNotes.front().midi, left, y, column);
-        return y + control;
-    };
-
-    float bottom = top, previewTop = top;
-    if (tabs && rangeTab_) {
-        bottom = rangeControls(x, top);
-    } else {
-        if (!tabs) { text("CLEF", {x, top}, 1.25f, muted); top += 20; }
-        drawClefs({{x, top}, {column, control}});
-        bottom = top + control + gap;
-        if (twoColumns) {
-            previewTop = countControls(rightX, top - 20, true) + 2 * gap;
-            bottom = std::max(rangeControls(x, bottom), previewTop);
-        } else {
-            bottom = countControls(x, bottom, !tabs);
-            if (!tabs) bottom = rangeControls(x, bottom + gap);
-        }
     }
-    const float startY = std::max(bottom + gap, height_ - control - 26);
-    const float previewY = twoColumns ? previewTop : bottom + 2 * gap;
-    const float previewHeight = startY - gap - previewY;
-    if ((twoColumns || !tabs || rangeTab_) && previewHeight >= 70)
-        rangePreview({{twoColumns ? rightX : x, previewY}, {column, std::min(160.0f * scale_, previewHeight)}});
-    const bool hasNotes = quiz_.settings.allowedNoteCount() > 0;
-    if (button(hasNotes ? "Start practice" : "Choose notes first", {{x, startY}, {w, control}}, true, hasNotes)) {
-        if (quiz_.start(quiz_.settings.questionCount, seed())) renderedNotes_.clear();
-    }
+    if (button("Done", {{x, doneY}, {w, control}}, true)) notePicker_ = false;
 }
 
 void Game::drawNotePicker() {
@@ -253,8 +264,10 @@ void Game::drawNotePicker() {
     const float summaryY = shortView ? 54.0f : 68.0f;
     const float filterY = shortView ? 72.0f : 92.0f;
     const float gridY = filterY + control + gap + 4;
-    if (button("Back", {{x, headingY}, {84, 44}})) notePicker_ = false;
-    centered("Choose notes", {{x + 92, headingY}, {w - 92, 44}}, 2.0f, gold);
+    const float tabWidth = (w - 2 * gap) / 3;
+    if (button("Back", {{x, headingY}, {tabWidth, 44}})) { notePicker_ = false; return; }
+    if (button("Range", {{x + tabWidth + gap, headingY}, {tabWidth, 44}}, rangeTab_)) rangeTab_ = true;
+    if (button("Notes", {{x + 2 * (tabWidth + gap), headingY}, {tabWidth, 44}}, !rangeTab_)) rangeTab_ = false;
     const auto low = std::find_if(kNotes.begin(), kNotes.end(),
         [&](const Note& note) { return note.midi == quiz_.settings.lowestMidi; });
     const auto high = std::find_if(kNotes.begin(), kNotes.end(),
@@ -262,11 +275,12 @@ void Game::drawNotePicker() {
     const auto summary = std::string(low->compactName()) + " - " + std::string(high->compactName()) +
         " / " + std::to_string(quiz_.settings.allowedNoteCount()) + " included";
     centered(summary, {{x, summaryY}, {w, 16}}, 1.2f, muted);
+    if (rangeTab_) { drawCustomRange(); return; }
     const float filterWidth = (w - gap) / 2;
     if (button("All", {{x, filterY}, {filterWidth, control}})) quiz_.settings.enabledNotes = kAllNotesMask;
     if (button("None", {{x + filterWidth + gap, filterY}, {filterWidth, control}})) quiz_.settings.enabledNotes = 0;
 
-    const float startY = height_ - control - 26;
+    const float startY = height_ - control - 16;
     const int columns = std::clamp(int((w + gap) / (64 + gap)), 2, 8);
     const int totalRows = (int(kNotes.size()) + columns - 1) / columns;
     const int rowsWithoutPaging = std::max(1, int((startY - gridY) / (control + gap)));
@@ -298,12 +312,7 @@ void Game::drawNotePicker() {
         if (startY - hintY > 52)
             wrapped("Teal notes are included. Gray notes are outside your range.", {{x, hintY}, {w, 52}}, 1.1f, muted);
     }
-    const bool hasNotes = quiz_.settings.allowedNoteCount() > 0;
-    if (button(hasNotes ? "Start practice" : "Select a note first", {{x, startY}, {w, control}}, true, hasNotes)) {
-        if (quiz_.start(quiz_.settings.questionCount, seed())) {
-            notePicker_ = false; renderedNotes_.clear();
-        }
-    }
+    if (button("Done", {{x, startY}, {w, control}}, true)) notePicker_ = false;
 }
 
 void Game::drawTrombone(Rect bounds) {
@@ -334,9 +343,12 @@ void Game::drawQuestion(bool feedback) {
     if (notationError_.empty() && notation_) notation_->draw(*this, paper.pos + olc::vf2d{10, 7} * scale_, paper.size - olc::vf2d{20, 14} * scale_);
     else wrapped("Notation unavailable: " + notationError_, {paper.pos + olc::vf2d{14, 14} * scale_, paper.size - olc::vf2d{28, 28} * scale_}, 1.05f, background);
     drawTrombone(instrument);
+    const Rect actionButton{{x, height_ * 0.84f}, {w, std::max(44.0f, 52 * scale_)}};
     if (!feedback) {
-        wrapped("Tap or drag the column", {{x, height_ * (compact ? 0.74f : 0.76f)}, {w, 35 * scale_}}, 1.25f, muted);
-        if (button("Submit position " + std::to_string(quiz_.selectedPosition()), {{x, height_ * 0.84f}, {w, std::max(44.0f, 52 * scale_)}}, true)) quiz_.submit();
+        constexpr std::string_view hint = "Choose slide position on the right";
+        const float hintSize = w < float(hint.size()) * 8 * std::max(1.4f, 1.25f * scale_) ? 1.0f : 1.25f;
+        wrapped(hint, {{x, height_ * (compact ? 0.74f : 0.76f)}, {w, 35 * scale_}}, hintSize, muted);
+        if (button("Submit position " + std::to_string(quiz_.selectedPosition()), actionButton, true)) quiz_.submit();
     } else {
         const bool correct = quiz_.lastCorrect();
         text(correct ? "Correct!" : "Incorrect", {x, height_ * (compact ? 0.73f : 0.755f)}, 2.0f, correct ? teal : red);
@@ -345,7 +357,7 @@ void Game::drawQuestion(bool feedback) {
         for (int p = 1; p <= 7; ++p) if (p != note->referencePosition && note->accepts(p)) alternatives += (alternatives.empty() ? "" : ", ") + std::to_string(p);
         if (!alternatives.empty()) answer += " / Alt: " + alternatives;
         wrapped(answer, {{x, height_ * (compact ? 0.79f : 0.80f)}, {w, 35 * scale_}}, 1.25f, muted);
-        if (button(quiz_.questionIndex() + 1 == quiz_.questionCount() ? "See results" : "Next question", {{x, height_ * (compact ? 0.84f : 0.87f)}, {w, std::max(44.0f, 48 * scale_)}}, true)) quiz_.next();
+        if (button(quiz_.questionIndex() + 1 == quiz_.questionCount() ? "See results" : "Next question", actionButton, true)) quiz_.next();
     }
 }
 
@@ -380,12 +392,13 @@ bool Game::OnUserUpdate(float elapsed) {
         draw.SetTarget(GetScreen());
     }
     width_ = float(ScreenSize().x); height_ = float(ScreenSize().y);
-    contentWidth_ = width_ * 0.78f;
+    const auto state = quiz_.state();
+    const bool fullWidthSettings = state == QuizState::Settings;
+    contentWidth_ = fullWidthSettings ? width_ : width_ * 0.78f;
     scale_ = std::clamp(std::min(width_ / 1120, height_ / 720), 0.7f, 2.0f);
     margin_ = std::min(42 * scale_, contentWidth_ * 0.07f);
     readPointer(elapsed);
     draw.Clear(background);
-    const auto state = quiz_.state();
     switch (state) {
         case QuizState::Settings: drawSettings(); break;
         case QuizState::Question: drawQuestion(false); break;
@@ -393,8 +406,8 @@ bool Game::OnUserUpdate(float elapsed) {
         case QuizState::Results: drawResults(); break;
     }
     if (state != QuizState::Question) dragging_ = false;
-    drawSelector();
-    if (height_ > width_) text("Rotate for a wider view", {margin_, height_ - 19 * scale_}, 1.0f, muted);
+    if (!fullWidthSettings) drawSelector();
+    if (state != QuizState::Settings && height_ > width_) text("Rotate for a wider view", {margin_, height_ - 19 * scale_}, 1.0f, muted);
     return true;
 }
 
