@@ -1,5 +1,6 @@
 #include "Notes.h"
 #include "Quiz.h"
+#include "SlideInput.h"
 
 #include <algorithm>
 #include <array>
@@ -574,6 +575,101 @@ void positionMapping() {
     check(positionFromY(10.0f, std::numeric_limits<float>::infinity()) == 1,
           "invalid canvas height is safe");
 }
+
+void instrumentHitGeometry() {
+    const auto full = InstrumentGeometry::make(100, 200, 1000, 180);
+    check(full.originX == 100 && full.originY == 200 && full.scale == 1 &&
+              full.stepPixels() == 50,
+          "full-size instrument maps each slide position to fifty screen pixels");
+    check(full.hitsSlide(500, 320, 1) && full.hitsSlide(1000, 320, 7),
+          "outer slide can be grabbed at both first and seventh positions");
+    check(!full.hitsSlide(1000, 320, 1) && !full.hitsSlide(500, 320, 7),
+          "the slide hit target follows its visible horizontal position");
+    check(full.hitsSlide(339, 320, 1) && !full.hitsSlide(337, 320, 1) &&
+              full.hitsSlide(785, 320, 1) && !full.hitsSlide(787, 320, 1),
+          "slide hit target pads both horizontal ends by twelve screen pixels");
+    check(full.hitsSlide(500, 285, 1) && !full.hitsSlide(500, 283, 1) &&
+              full.hitsSlide(500, 355, 1) && !full.hitsSlide(500, 357, 1),
+          "slide hit target pads above and below the moving assembly");
+    check(!full.hitsSlide(250, 320, 1) && !full.hitsSlide(500, 240, 1),
+          "fixed rear tubing and upper bell area do not start a slide drag");
+
+    const auto small = InstrumentGeometry::make(10, 20, 250, 90);
+    check(small.originX == 10 && small.originY == 42.5f && small.scale == 0.25f &&
+              small.stepPixels() == 12.5f,
+          "compact geometry centers the instrument and scales horizontal drag travel");
+    check(small.hitsSlide(120, 51, 1) && small.hitsSlide(120, 94, 1) &&
+              !small.hitsSlide(120, 50, 1) && !small.hitsSlide(120, 95, 1),
+          "compact slide retains a forty-four-pixel-high touch target");
+    const auto wide = InstrumentGeometry::make(40, 30, 2000, 180);
+    check(wide.originX == 540 && wide.originY == 30 && wide.scale == 1 &&
+              wide.hitsSlide(940, 150, 1) && !wide.hitsSlide(500, 150, 1),
+          "hit testing uses the same centered origin in wide layouts");
+    for (const auto geometry : {
+             InstrumentGeometry::make(0, 0, 0, 180),
+             InstrumentGeometry::make(0, 0, 1000, -1),
+             InstrumentGeometry::make(0, 0, std::numeric_limits<float>::infinity(), 180)}) {
+        check(geometry.stepPixels() == 0 && !geometry.hitsSlide(400, 120, 1),
+              "invalid drawing bounds provide no slide drag target");
+    }
+}
+
+void horizontalSlideDragging() {
+    SlideDrag drag;
+    check(drag.mode == SlideDrag::Mode::None, "slide input starts without a captured gesture");
+    for (const float step : {12.5f, 25.0f, 50.0f}) {
+        for (const float grabX : {10.0f, 177.5f, 810.0f}) {
+            for (int initial = 1; initial <= 7; ++initial) {
+                drag.beginSlide(grabX, initial, step);
+                check(drag.mode == SlideDrag::Mode::Slide && drag.updateSlide(grabX) == initial,
+                      "grabbing anywhere on the slide preserves its current position without jumping");
+                for (int expected = 1; expected <= 7; ++expected) {
+                    const float pointerX = grabX + static_cast<float>(expected - initial) * step;
+                    check(drag.updateSlide(pointerX) == expected,
+                          "horizontal travel reaches all seven positions at every supported instrument scale");
+                }
+            }
+        }
+    }
+    drag.beginSlide(100, 3, 50);
+    check(drag.updateSlide(129) == 3, "small horizontal motion stays at the starting position");
+    check(drag.updateSlide(131) == 4, "dragging beyond the forward snap threshold extends the slide");
+    for (const float pointerX : {124.0f, 126.0f, 124.0f, 126.0f, 121.0f}) {
+        check(drag.updateSlide(pointerX) == 4,
+              "pointer jitter near a position boundary does not make the selected position chatter");
+    }
+    check(drag.updateSlide(119) == 3,
+          "a deliberate reverse drag crosses the separate return threshold");
+    check(drag.updateSlide(126) == 3 && drag.updateSlide(124) == 3,
+          "the return snap remains stable when jitter resumes");
+    drag.beginSlide(500, 4, 20);
+    check(drag.updateSlide(560) == 7 && drag.updateSlide(440) == 1 &&
+              drag.updateSlide(500) == 4,
+          "a captured slide gesture can reverse across several positions");
+    check(drag.updateSlide(100000) == 7 && drag.updateSlide(-100000) == 1,
+          "dragging far beyond the instrument clamps to seventh and first positions");
+    check(drag.mode == SlideDrag::Mode::Slide,
+          "leaving the instrument retains the captured slide gesture");
+    check(drag.updateSlide(std::numeric_limits<float>::quiet_NaN()) == 1 &&
+              drag.updateSlide(std::numeric_limits<float>::infinity()) == 1,
+          "invalid pointer coordinates do not change the selected slide position");
+    drag.beginSlide(100, 4, 50);
+    check(drag.updateSlide(200) == 6, "slide gesture can select a new position before cancellation");
+    drag.cancel();
+    check(drag.mode == SlideDrag::Mode::None && drag.updateSlide(-100) == 6,
+          "cancelling releases capture and prevents further horizontal updates");
+    drag.beginColumn();
+    check(drag.mode == SlideDrag::Mode::Column && drag.updateSlide(10000) == 6,
+          "column gestures retain their own capture and cannot update the horizontal slide");
+    drag.cancel();
+    check(drag.mode == SlideDrag::Mode::None, "cancelling also releases a column gesture");
+    for (const float step : {0.0f, -1.0f, std::numeric_limits<float>::infinity(),
+                             std::numeric_limits<float>::quiet_NaN()}) {
+        drag.beginSlide(100, 4, step);
+        check(drag.mode == SlideDrag::Mode::None && drag.updateSlide(1000) == 4,
+              "invalid slide scale cannot capture or move a horizontal gesture");
+    }
+}
 } // namespace
 
 int main() {
@@ -588,6 +684,8 @@ int main() {
     normalizedRanges();
     exactPitchSelection();
     positionMapping();
+    instrumentHitGeometry();
+    horizontalSlideDragging();
     std::cout << checks << " checks, " << failures << " failures\n";
     return failures == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 }

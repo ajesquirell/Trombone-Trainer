@@ -162,8 +162,13 @@ Range and note controls retain octave numbers and compact accidentals (for
 example, `Bb3` or `C#4`); question headings show only `B-flat` or `C-sharp`.
 Where space allows, Lomse previews the two Custom range limits on a staff.
 
-Press **Start!**. Read the note, tap or drag the full-height seven-band column
-(**7 at the top, 1 at the bottom**), and press Submit. A correct reference **or ordinary
+Press **Start!**. Read the note and choose a position using either the full-height
+seven-band column (**7 at the top, 1 at the bottom**) or the moving trombone slide.
+Grab the outer tubes, brace, or curved end and drag horizontally: right extends
+toward position 7; left retracts toward position 1. The slide and column stay
+synchronized. Grabbing preserves the current position, with stable snapping
+between positions. Release ends the gesture; resizing or losing focus cancels it.
+Press Submit when ready. A correct reference **or ordinary
 alternate position** earns a point. Feedback stays visible until Next. Results
 show score and accuracy; Play Again keeps settings and resets the exercise.
 Clef buttons can also change the writing of the current pitch during practice.
@@ -196,7 +201,9 @@ counts independent of difficulty, exact preset membership, saved Custom choices,
 inclusive pitch bounds, exact-pitch toggles, empty selections, singleton
 ranges, replay, octave-free display
 names, clef invariance, random sequence constraints, and reversed selector edge
-coordinates at different sizes. Checks stay active in Release builds.
+coordinates at different sizes. Slide tests cover scaled hit areas, grab offsets,
+all seven positions, endpoint clamping, reverse dragging, snap stability, and
+capture cancellation. Checks stay active in Release builds.
 Native builds that include PGE3 also run `pge3_font_payload`, which checks that
 header generation preserves the complete upstream font data.
 

@@ -2,6 +2,7 @@
 
 #include "Notation.h"
 #include "Quiz.h"
+#include "SlideInput.h"
 #include "olcPixelGameEngine3.h"
 
 #include <memory>
@@ -46,8 +47,9 @@ private:
     Quiz quiz_;
     std::unique_ptr<Notation> notation_;
     Pointer pointer_;
+    SlideDrag drag_;
     std::optional<std::uint32_t> touchId_;
-    bool dragging_ = false, rangeTab_ = false, notePicker_ = false, customCount_ = false;
+    bool wasFocused_ = false, rangeTab_ = false, notePicker_ = false, customCount_ = false;
     int notePage_ = 0;
     float mouseCooldown_ = 0, scale_ = 1, width_ = 0, height_ = 0, contentWidth_ = 0, margin_ = 0;
     std::string renderedNotes_, notationError_;

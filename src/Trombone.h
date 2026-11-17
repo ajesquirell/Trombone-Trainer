@@ -1,5 +1,6 @@
 #pragma once
 
+#include "SlideInput.h"
 #include "olcPixelGameEngine3.h"
 
 #include <algorithm>
@@ -12,9 +13,10 @@ namespace trombone {
 // Painter is olc::Draw in the game; the same primitives can be recorded offline.
 template<class Painter>
 void drawInstrument(Painter& draw, olc::vf2d pos, olc::vf2d size, int position) {
-    if (size.x <= 0 || size.y <= 0) return;
-    const float scale = std::min(size.x / 1000.0f, size.y / 180.0f);
-    const auto origin = pos + (size - olc::vf2d{1000, 180} * scale) * 0.5f;
+    const auto geometry = InstrumentGeometry::make(pos.x, pos.y, size.x, size.y);
+    if (geometry.scale <= 0) return;
+    const float scale = geometry.scale;
+    const olc::vf2d origin{geometry.originX, geometry.originY};
     const auto point = [&](olc::vf2d p) { return origin + p * scale; };
     const olc::Pixel outline{76, 51, 26}, brass{199, 148, 56}, light{255, 225, 146};
     const olc::Pixel silver{180, 194, 204}, silverLight{239, 246, 248};
@@ -103,7 +105,7 @@ void drawInstrument(Painter& draw, olc::vf2d pos, olc::vf2d size, int position) 
     ellipse({176, 96}, 1.5f, 8, {85, 99, 110});
 
     // A rigid outer slide translates; its two sleeves always overlap the inner rails.
-    const float travel = 50.0f * (std::clamp(position, 1, 7) - 1);
+    const float travel = kSlidePositionStep * (std::clamp(position, 1, 7) - 1);
     const float start = 250 + travel, end = 650 + travel;
     tube({{start, 96}, {end, 96}});
     tube({{start, 144}, {end, 144}});

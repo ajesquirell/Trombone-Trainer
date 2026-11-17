@@ -1,5 +1,39 @@
 # Validation record
 
+## Update: horizontal trombone slide dragging
+
+The moving outer slide now accepts horizontal mouse/touch dragging. A padded
+hit region follows the slide at every position, with a minimum 44px height.
+Dragging preserves the initial grab offset, snaps stably to positions 1–7, and
+updates the same selected position as the vertical column. Captured gestures
+retain their input method across boundaries and end on release, resize, focus
+loss, or leaving the question state. A browser blur/visibility latch also handles
+tab switches that occur entirely while PGE3's render loop is paused.
+
+`SlideInput.h` supplies dependency-free drag math and the shared drawing/input
+transform; the renderer uses the original design dimensions and slide travel.
+
+Executed validation:
+
+- Native application rebuild and CTest: **PASS**, 2/2 tests.
+- Emscripten application build and `web-site` staging: **PASS**.
+- Core executable: **3,576 checks, 0 failures**, natively and as WebAssembly
+  under Node. Agent-executed strict GCC and UBSan runs also passed. Tests-first
+  stub verification failed the new drag/geometry checks before implementation.
+- Exact browser cancellation function body: **24 Node event checks PASS**,
+  including blur, hidden/visible between frames, latch consumption and one-time
+  listener registration. Harness: `/tmp/trombone-browser-cancel-test.cjs`.
+- Geometry recorder: all seven positions at 1100x340 and 390x145 produce
+  **14 byte-identical JSON recordings before and after** the shared-transform
+  change. The existing offline preview tool also passed its bounds checks.
+- Independent hit-region review at 320x300, 375x740, 740x360 and 1120x720:
+  padded targets remain clear of notation, buttons, and the position column.
+  Input review verified separate capture modes, state transitions and cancellation.
+- Browser launch retried with cached Playwright and Chrome: **BLOCKED**,
+  exit 133 with `crashpad ... setsockopt: Operation not permitted`, including
+  crashpad-disabling flags. No interactive browser, GPU, or physical-touch test
+  is claimed. Node event tests and geometry recordings do not replace them.
+
 ## Update: difficulty presets and simplified settings
 
 The start screen now offers Easy, Medium, Hard, and Custom, followed by clef,

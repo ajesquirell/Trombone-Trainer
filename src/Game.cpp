@@ -6,6 +6,24 @@
 #include <cmath>
 #include <sstream>
 
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+EM_JS(int, consumeBrowserInputCancellation, (), {
+    if (!Module['trainerInputHooked']) {
+        const cancel = () => { Module['trainerInputCancelled'] = true; };
+        Module['canvas'].addEventListener('blur', cancel);
+        window.addEventListener('blur', cancel);
+        document.addEventListener('visibilitychange', () => { if (document.hidden) cancel(); });
+        Module['trainerInputHooked'] = true;
+    }
+    const cancelled = Module['trainerInputCancelled'];
+    Module['trainerInputCancelled'] = false;
+    return cancelled ? 1 : 0;
+});
+#else
+static bool consumeBrowserInputCancellation() { return false; }
+#endif
+
 namespace trombone {
 namespace {
 const olc::Pixel background{11, 22, 38}, panel{19, 37, 58}, panelLight{27, 48, 71};
@@ -35,6 +53,15 @@ std::uint32_t Game::seed() const {
 }
 
 void Game::readPointer(float elapsed) {
+    const bool focused = IsFocused();
+    if (consumeBrowserInputCancellation() || (wasFocused_ && !focused)) {
+        wasFocused_ = focused;
+        drag_.cancel(); touchId_.reset();
+        pointer_.pressed = pointer_.held = false; pointer_.released = true;
+        mouseCooldown_ = 0.5f;
+        return;
+    }
+    wasFocused_ = focused;
     pointer_.pressed = pointer_.released = false;
     mouseCooldown_ = std::max(0.0f, mouseCooldown_ - elapsed);
     const auto ids = GetTouch().GetTouchIDs();
@@ -332,9 +359,18 @@ void Game::drawQuestion(bool feedback) {
     if (!note) return;
     const Rect instrument{{x + 8 * scale_, height_ * (compact ? 0.51f : 0.52f)}, {w - 18 * scale_, height_ * 0.23f}};
     if (!feedback) {
-        if (pointer_.pressed && (pointer_.pos.x >= contentWidth_ || instrument.contains(pointer_.pos))) dragging_ = true;
-        if (dragging_ && (pointer_.held || pointer_.pressed)) quiz_.select(positionFromY(pointer_.pos.y, height_));
-        if (pointer_.released || !pointer_.held) dragging_ = false;
+        const auto geometry = InstrumentGeometry::make(instrument.pos.x, instrument.pos.y, instrument.size.x, instrument.size.y);
+        if (pointer_.pressed) {
+            drag_.cancel();
+            if (pointer_.pos.x >= contentWidth_) drag_.beginColumn();
+            else if (geometry.hitsSlide(pointer_.pos.x, pointer_.pos.y, quiz_.selectedPosition()))
+                drag_.beginSlide(pointer_.pos.x, quiz_.selectedPosition(), geometry.stepPixels());
+        }
+        if (pointer_.held || pointer_.pressed || pointer_.released) {
+            if (drag_.mode == SlideDrag::Mode::Column) quiz_.select(positionFromY(pointer_.pos.y, height_));
+            else if (drag_.mode == SlideDrag::Mode::Slide) quiz_.select(drag_.updateSlide(pointer_.pos.x));
+        }
+        if (pointer_.released || (!pointer_.held && !pointer_.pressed)) drag_.cancel();
     }
     centered(note->displayName(), {{x, height_ * (compact ? 0.18f : 0.16f)}, {w, height_ * 0.085f}}, compact ? 3.5f : 4.5f, ink);
     const Rect paper{{x, height_ * (compact ? 0.29f : 0.27f)}, {w, height_ * (compact ? 0.20f : 0.23f)}};
@@ -345,7 +381,7 @@ void Game::drawQuestion(bool feedback) {
     drawTrombone(instrument);
     const Rect actionButton{{x, height_ * 0.84f}, {w, std::max(44.0f, 52 * scale_)}};
     if (!feedback) {
-        constexpr std::string_view hint = "Choose slide position on the right";
+        constexpr std::string_view hint = "Move slide or choose position on the right";
         const float hintSize = w < float(hint.size()) * 8 * std::max(1.4f, 1.25f * scale_) ? 1.0f : 1.25f;
         wrapped(hint, {{x, height_ * (compact ? 0.74f : 0.76f)}, {w, 35 * scale_}}, hintSize, muted);
         if (button("Submit position " + std::to_string(quiz_.selectedPosition()), actionButton, true)) quiz_.submit();
@@ -388,6 +424,7 @@ void Game::drawSelector() {
 bool Game::OnUserUpdate(float elapsed) {
     const auto physical = GetWindowSize();
     if (physical.x > 0 && physical.y > 0 && physical != ScreenSize()) {
+        drag_.cancel();
         GetScreen().Resize(physical);
         draw.SetTarget(GetScreen());
     }
@@ -405,7 +442,7 @@ bool Game::OnUserUpdate(float elapsed) {
         case QuizState::Feedback: drawQuestion(true); break;
         case QuizState::Results: drawResults(); break;
     }
-    if (state != QuizState::Question) dragging_ = false;
+    if (quiz_.state() != QuizState::Question) drag_.cancel();
     if (!fullWidthSettings) drawSelector();
     if (state != QuizState::Settings && height_ > width_) text("Rotate for a wider view", {margin_, height_ - 19 * scale_}, 1.0f, muted);
     return true;
